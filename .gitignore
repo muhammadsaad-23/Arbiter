@@ -1,5 +1,9 @@
 # python
 __pycache__/
+
+# node
+node_modules/
+frontend/dist/
 *.py[cod]
 *$py.class
 *.so

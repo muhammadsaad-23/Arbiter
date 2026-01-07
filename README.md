@@ -36,12 +36,29 @@ python main.py --no-bots          # just market, no bots
 python main.py --no-dashboard     # headless mode
 ```
 
-## Web UI
+## Web UI (React + TypeScript)
 
-There's also a streamlit dashboard if you want something nicer:
+There's a real-time dashboard built with React and TypeScript:
 
 ```bash
-pip install streamlit pandas
+# Terminal 1 - start the API server
+source venv/bin/activate
+pip install fastapi uvicorn websockets
+python api/server.py
+
+# Terminal 2 - start the frontend
+cd frontend
+npm install
+npm run dev
+```
+
+Then go to http://localhost:3000
+
+### Streamlit (alternative)
+
+If you prefer something simpler:
+
+```bash
 streamlit run app.py
 ```
 
@@ -61,7 +78,11 @@ stock-sim/
 │   └── portfolio.py # position tracking
 ├── bots/            # trading strategies
 ├── utils/           # logging, indicators
-└── main.py          # entry point
+├── api/             # FastAPI backend
+│   └── server.py    # websocket server
+├── frontend/        # React + TypeScript UI
+│   └── src/
+└── main.py          # CLI entry point
 ```
 
 ## Price Models
@@ -109,8 +130,9 @@ pytest tests/ -v
 
 - [ ] better arbitrage detection
 - [ ] add more indicators
-- [ ] websocket api maybe?
+- [x] websocket api 
 - [ ] fix the volatility decay (its a bit aggressive)
+- [ ] mobile responsive layout
 
 ## Sample output
 
