@@ -1,0 +1,30 @@
+# python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.venv/
+
+# logs (keep sample)
+logs/audit.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# testing
+.coverage
+htmlcov/
+.pytest_cache/
+
+# misc
+*.egg-info/
+dist/
+build/
+
