@@ -1,0 +1,133 @@
+# Stock Market Simulator Configuration
+# =====================================
+
+simulation:
+  tick_rate: 1.0                    # Updates per second
+  duration_seconds: 300             # Total simulation duration (5 minutes)
+  initial_timestamp: null           # Use current time if null
+  random_seed: 42                   # For reproducibility (null for random)
+
+market:
+  trading_hours:
+    pre_market_start: "04:00"
+    market_open: "09:30"
+    market_close: "16:00"
+    after_hours_end: "20:00"
+  
+  price_models:
+    default: "gbm"                  # Options: random_walk, gbm, hybrid
+    volatility_base: 0.02           # Base volatility (2%)
+    drift: 0.0001                   # Daily drift rate
+    
+  events:
+    news_frequency: 0.05            # Probability of news event per tick
+    crash_probability: 0.001        # Probability of market crash
+    halt_threshold: 0.10            # 10% move triggers halt
+    halt_duration: 60               # Halt duration in seconds
+
+assets:
+  default_symbols:
+    - symbol: "AAPL"
+      name: "Apple Inc."
+      initial_price: 175.50
+      volatility: 0.025
+      sector: "Technology"
+    - symbol: "GOOGL"
+      name: "Alphabet Inc."
+      initial_price: 141.25
+      volatility: 0.028
+      sector: "Technology"
+    - symbol: "MSFT"
+      name: "Microsoft Corporation"
+      initial_price: 378.90
+      volatility: 0.022
+      sector: "Technology"
+    - symbol: "AMZN"
+      name: "Amazon.com Inc."
+      initial_price: 178.35
+      volatility: 0.030
+      sector: "Consumer Cyclical"
+    - symbol: "TSLA"
+      name: "Tesla Inc."
+      initial_price: 248.50
+      volatility: 0.045
+      sector: "Automotive"
+    - symbol: "JPM"
+      name: "JPMorgan Chase & Co."
+      initial_price: 195.20
+      volatility: 0.020
+      sector: "Financial"
+    - symbol: "NVDA"
+      name: "NVIDIA Corporation"
+      initial_price: 495.80
+      volatility: 0.040
+      sector: "Technology"
+    - symbol: "META"
+      name: "Meta Platforms Inc."
+      initial_price: 505.25
+      volatility: 0.035
+      sector: "Technology"
+    - symbol: "BRK.B"
+      name: "Berkshire Hathaway"
+      initial_price: 408.15
+      volatility: 0.015
+      sector: "Financial"
+    - symbol: "V"
+      name: "Visa Inc."
+      initial_price: 279.40
+      volatility: 0.018
+      sector: "Financial"
+
+  max_symbols: 100
+  
+  order_book:
+    max_depth: 50                   # Max orders per side
+    min_spread: 0.01                # Minimum bid-ask spread ($)
+    liquidity_factor: 0.7           # Base liquidity multiplier
+
+trading:
+  transaction_fee: 0.001            # 0.1% per transaction
+  min_order_size: 1
+  max_order_size: 100000
+  margin_requirement: 0.5           # 50% margin for short selling
+  short_selling_enabled: true
+  partial_fills_enabled: true
+
+brokerage:
+  initial_balance: 100000.00        # Starting cash for each user
+  max_leverage: 2.0                 # Maximum leverage allowed
+  margin_call_threshold: 0.25       # Margin call at 25% equity
+  
+bots:
+  enabled: true
+  trading_interval: 5               # Seconds between bot decisions
+  
+  momentum:
+    lookback_period: 20
+    entry_threshold: 0.02           # 2% momentum trigger
+    position_size: 0.10             # 10% of portfolio
+    stop_loss: 0.05                 # 5% stop loss
+    
+  mean_reversion:
+    lookback_period: 50
+    std_threshold: 2.0              # 2 standard deviations
+    position_size: 0.08
+    reversion_target: 0.5           # Close at 50% reversion
+    
+  arbitrage:
+    correlation_threshold: 0.8
+    spread_threshold: 0.01          # 1% spread to trigger
+    position_size: 0.15
+
+logging:
+  level: "INFO"                     # DEBUG, INFO, WARNING, ERROR
+  audit_file: "logs/audit.log"
+  max_file_size: 10485760           # 10MB
+  backup_count: 5
+  hash_chain_enabled: true
+
+dashboard:
+  refresh_rate: 1.0                 # Dashboard refresh rate (seconds)
+  display_mode: "terminal"          # terminal or streamlit
+  chart_history: 100                # Number of data points for charts
+
