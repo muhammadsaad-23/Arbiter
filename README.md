@@ -36,6 +36,47 @@ python main.py --no-bots          # just market, no bots
 python main.py --no-dashboard     # headless mode
 ```
 
+## Historical Data Mode (NEW!)
+
+Test your bots against **real historical stock prices** from Yahoo Finance:
+
+```bash
+# Use real historical data (last month, hourly)
+python main.py --historical
+
+# Customize the data range
+python main.py --historical --period 3mo --interval 1d   # 3 months daily
+python main.py --historical --period 1y --interval 1d    # 1 year daily
+python main.py --historical --period 5d --interval 15m   # 5 days, 15-min bars
+```
+
+### Available Options
+
+| Period | Description |
+|--------|-------------|
+| `1d` | Last day |
+| `5d` | Last 5 days |
+| `1mo` | Last month (default) |
+| `3mo` | Last 3 months |
+| `6mo` | Last 6 months |
+| `1y` | Last year |
+| `2y` | Last 2 years |
+
+| Interval | Description | Max History |
+|----------|-------------|-------------|
+| `1m` | 1 minute | 7 days |
+| `5m` | 5 minutes | 60 days |
+| `15m` | 15 minutes | 60 days |
+| `1h` | 1 hour (default) | 730 days |
+| `1d` | 1 day | unlimited |
+
+### Simulation vs Historical
+
+| Mode | Command | Data Source |
+|------|---------|-------------|
+| **Simulation** | `python main.py` | Generated using GBM (fake prices) |
+| **Historical** | `python main.py --historical` | Real data from Yahoo Finance |
+
 ## Web UI (React + TypeScript)
 
 There's a real-time dashboard built with React and TypeScript:
@@ -131,6 +172,7 @@ pytest tests/ -v
 - [ ] better arbitrage detection
 - [ ] add more indicators
 - [x] websocket api 
+- [x] historical data mode (Yahoo Finance)
 - [ ] fix the volatility decay (its a bit aggressive)
 - [ ] mobile responsive layout
 

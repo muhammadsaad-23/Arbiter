@@ -58,6 +58,12 @@ class Asset:
     is_halted: bool = field(default=False)
     halt_reason: str = field(default="")
     
+    # Historical data replay support
+    historical_prices: List[float] = field(default_factory=list)
+    historical_volumes: List[int] = field(default_factory=list)
+    _replay_index: int = field(default=0, repr=False)
+    _use_historical: bool = field(default=False, repr=False)
+    
     def __post_init__(self):
         self.price = self.initial_price
         self.open_price = self.initial_price
@@ -68,6 +74,8 @@ class Asset:
         self._update_bid_ask()
         self._tick_count = 0
         self._cumulative_volume = 0
+        self._replay_index = 0
+        self._use_historical = False
         
     def _update_bid_ask(self):
         # spread widens with vol, narrows with liquidity
@@ -130,6 +138,76 @@ class Asset:
         new_price = max(0.01, new_price)
         self._apply_price_update(new_price)
         return self.price
+
+    def load_historical_data(self, prices: List[float], volumes: Optional[List[int]] = None):
+        """
+        Load historical prices for replay mode.
+        
+        Args:
+            prices: List of historical closing prices
+            volumes: Optional list of historical volumes (same length as prices)
+        """
+        if not prices:
+            return
+        
+        self.historical_prices = prices
+        self.historical_volumes = volumes if volumes else [0] * len(prices)
+        self._replay_index = 0
+        self._use_historical = True
+        
+        # Set initial price to first historical price
+        self.price = prices[0]
+        self.initial_price = prices[0]
+        self.open_price = prices[0]
+        self.high_price = prices[0]
+        self.low_price = prices[0]
+        self.prev_close = prices[0]
+        self.long_term_mean = sum(prices) / len(prices)  # Use actual mean
+        self._update_bid_ask()
+
+    def update_price_historical(self, dt: float = 1.0) -> float:
+        """
+        Replay next historical price instead of generating.
+        
+        Returns the current price (unchanged if no more data).
+        """
+        if self.is_halted:
+            return self.price
+        
+        if not self.historical_prices:
+            return self.price
+        
+        if self._replay_index < len(self.historical_prices):
+            new_price = self.historical_prices[self._replay_index]
+            
+            # Use historical volume if available
+            if self._replay_index < len(self.historical_volumes):
+                historical_vol = self.historical_volumes[self._replay_index]
+                if historical_vol > 0:
+                    self.volume = historical_vol
+            
+            self._replay_index += 1
+            self._apply_price_update(new_price)
+        
+        return self.price
+
+    def has_more_historical_data(self) -> bool:
+        """Check if there's more historical data to replay."""
+        return self._use_historical and self._replay_index < len(self.historical_prices)
+
+    def get_historical_progress(self) -> Tuple[int, int]:
+        """Get replay progress (current_index, total)."""
+        return self._replay_index, len(self.historical_prices)
+
+    def reset_historical_replay(self):
+        """Reset replay to beginning."""
+        self._replay_index = 0
+        if self.historical_prices:
+            self.price = self.historical_prices[0]
+            self.open_price = self.historical_prices[0]
+            self.high_price = self.historical_prices[0]
+            self.low_price = self.historical_prices[0]
+            self._update_bid_ask()
 
     def apply_shock(self, magnitude: float, is_positive: bool = True):
         if self.is_halted:
@@ -248,21 +326,82 @@ class AssetManager:
             config.get('market', {}).get('price_models', {}).get('default', 'gbm')
         )
         self._lock = asyncio.Lock()
+        self._use_historical = False
 
-    async def initialize(self):
+    async def initialize(self, use_historical: bool = False, 
+                        historical_period: str = "1mo",
+                        historical_interval: str = "1h"):
+        """
+        Initialize assets, optionally with real historical data.
+        
+        Args:
+            use_historical: If True, fetch real data from Yahoo Finance
+            historical_period: How far back ("1d", "5d", "1mo", "3mo", "1y")
+            historical_interval: Data frequency ("1m", "5m", "15m", "1h", "1d")
+        """
+        self._use_historical = use_historical
         assets_config = self._config.get('assets', {})
         default_symbols = assets_config.get('default_symbols', [])
         
+        # Fetch real historical data if requested
+        historical_data = {}
+        historical_volumes = {}
+        
+        if use_historical:
+            print("  📊 Fetching real historical data from Yahoo Finance...")
+            try:
+                from utils.data_fetcher import HistoricalDataFetcher
+                fetcher = HistoricalDataFetcher()
+                
+                for asset_def in default_symbols:
+                    symbol = asset_def['symbol']
+                    try:
+                        prices = fetcher.get_price_series(symbol, historical_period, historical_interval)
+                        volumes = fetcher.get_volume_series(symbol, historical_period, historical_interval)
+                        
+                        if prices:
+                            historical_data[symbol] = prices
+                            historical_volumes[symbol] = volumes
+                            print(f"    ✓ {symbol}: {len(prices)} data points (${prices[0]:.2f} → ${prices[-1]:.2f})")
+                        else:
+                            print(f"    ✗ {symbol}: No data returned")
+                    except Exception as e:
+                        print(f"    ✗ {symbol}: Failed - {e}")
+                        
+            except ImportError:
+                print("    ⚠ yfinance not installed. Run: pip install yfinance")
+                print("    Falling back to simulated prices...")
+                use_historical = False
+        
+        # Create assets
         for asset_def in default_symbols:
-            await self.add_asset(
-                symbol=asset_def['symbol'],
+            symbol = asset_def['symbol']
+            
+            # Use real initial price if available
+            initial_price = asset_def['initial_price']
+            if symbol in historical_data and historical_data[symbol]:
+                initial_price = historical_data[symbol][0]
+            
+            asset = await self.add_asset(
+                symbol=symbol,
                 name=asset_def['name'],
-                initial_price=asset_def['initial_price'],
+                initial_price=initial_price,
                 volatility=asset_def.get('volatility', 0.02),
                 sector=asset_def.get('sector', 'General')
             )
+            
+            # Load historical data for replay
+            if symbol in historical_data:
+                asset.load_historical_data(
+                    historical_data[symbol],
+                    historical_volumes.get(symbol)
+                )
         
         await self._initialize_correlations()
+        
+        if use_historical and historical_data:
+            total_points = sum(len(p) for p in historical_data.values())
+            print(f"  ✓ Loaded {total_points} total historical data points for {len(historical_data)} symbols")
 
     async def add_asset(self, symbol: str, name: str, initial_price: float,
                        volatility: float = 0.02, sector: str = "General") -> Asset:
@@ -337,6 +476,11 @@ class AssetManager:
         return sorted(pairs, key=lambda x: x[2], reverse=True)
 
     async def update_prices(self, dt: float = 1.0) -> Dict[str, float]:
+        """
+        Update prices for all assets.
+        
+        Uses historical data if loaded, otherwise generates using price model.
+        """
         updates = {}
         
         for symbol, asset in self._assets.items():
@@ -344,18 +488,43 @@ class AssetManager:
                 updates[symbol] = asset.price
                 continue
             
-            if self._price_model == PriceModel.RANDOM_WALK:
-                new_price = asset.update_price_random_walk(dt)
-            elif self._price_model == PriceModel.GBM:
-                new_price = asset.update_price_gbm(dt)
+            # Use historical data if available and enabled
+            if asset._use_historical and asset.has_more_historical_data():
+                new_price = asset.update_price_historical(dt)
             else:
-                new_price = asset.update_price_hybrid(dt)
+                # Fall back to simulation model
+                if self._price_model == PriceModel.RANDOM_WALK:
+                    new_price = asset.update_price_random_walk(dt)
+                elif self._price_model == PriceModel.GBM:
+                    new_price = asset.update_price_gbm(dt)
+                else:
+                    new_price = asset.update_price_hybrid(dt)
             
             updates[symbol] = new_price
         
-        await self._apply_correlation_effects()
+        # Only apply correlation effects for simulated data
+        if not self._use_historical:
+            await self._apply_correlation_effects()
         
         return updates
+
+    def is_historical_complete(self) -> bool:
+        """Check if all historical data has been replayed."""
+        if not self._use_historical:
+            return False
+        return all(
+            not asset.has_more_historical_data() 
+            for asset in self._assets.values() 
+            if asset._use_historical
+        )
+
+    def get_historical_progress(self) -> Dict[str, Tuple[int, int]]:
+        """Get replay progress for all assets."""
+        return {
+            symbol: asset.get_historical_progress()
+            for symbol, asset in self._assets.items()
+            if asset._use_historical
+        }
 
     async def _apply_correlation_effects(self):
         # if one stock moves big, correlated ones follow

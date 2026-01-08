@@ -157,11 +157,30 @@ class StockSimulator:
         self._shutdown_event = asyncio.Event()
         self._start_time: Optional[datetime] = None
 
-    async def initialize(self):
+    async def initialize(self, use_historical: bool = False,
+                        historical_period: str = "1mo",
+                        historical_interval: str = "1h"):
+        """
+        Initialize simulation.
+        
+        Args:
+            use_historical: If True, use real historical data from Yahoo Finance
+            historical_period: How far back for historical data
+            historical_interval: Data frequency for historical data
+        """
         print("Initializing simulation...")
         
+        if use_historical:
+            print("  📈 Mode: HISTORICAL DATA (real market data)")
+        else:
+            print("  🎲 Mode: SIMULATION (generated prices)")
+        
         self._market = MarketEngine(self._config, self._logger)
-        await self._market.initialize()
+        await self._market.initialize(
+            use_historical=use_historical,
+            historical_period=historical_period,
+            historical_interval=historical_interval
+        )
         print(f"  ✓ Market initialized with {len(self._market.asset_manager.get_symbols())} assets")
         
         self._broker = Broker(self._config, self._market, self._logger)
@@ -361,6 +380,12 @@ def main():
     parser.add_argument('--tick-rate', type=float, help='Price updates per second')
     parser.add_argument('--no-bots', action='store_true', help='Disable trading bots')
     parser.add_argument('--no-dashboard', action='store_true', help='Disable terminal dashboard')
+    parser.add_argument('--historical', action='store_true', 
+                        help='Use real historical data from Yahoo Finance instead of simulation')
+    parser.add_argument('--period', default='1mo', 
+                        help='Historical data period (1d, 5d, 1mo, 3mo, 6mo, 1y)')
+    parser.add_argument('--interval', default='1h',
+                        help='Historical data interval (1m, 5m, 15m, 1h, 1d)')
     
     args = parser.parse_args()
     
@@ -374,7 +399,11 @@ def main():
     signal.signal(signal.SIGTERM, signal_handler)
     
     async def run():
-        await simulator.initialize()
+        await simulator.initialize(
+            use_historical=args.historical,
+            historical_period=args.period,
+            historical_interval=args.interval
+        )
         await simulator.run(
             duration=args.duration,
             tick_rate=args.tick_rate,

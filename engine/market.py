@@ -95,10 +95,23 @@ class MarketEngine:
     def is_running(self) -> bool:
         return self._is_running
 
-    async def initialize(self):
-        """Initialize all market components."""
-        # Initialize assets
-        await self._asset_manager.initialize()
+    async def initialize(self, use_historical: bool = False,
+                        historical_period: str = "1mo",
+                        historical_interval: str = "1h"):
+        """
+        Initialize all market components.
+        
+        Args:
+            use_historical: If True, load real historical data from Yahoo Finance
+            historical_period: How far back ("1d", "5d", "1mo", "3mo", "1y")
+            historical_interval: Data frequency ("1m", "5m", "15m", "1h", "1d")
+        """
+        # Initialize assets (with optional historical data)
+        await self._asset_manager.initialize(
+            use_historical=use_historical,
+            historical_period=historical_period,
+            historical_interval=historical_interval
+        )
         
         # Initialize event system
         self._event_system = EventSystem(self._config, self._asset_manager, self._logger)
@@ -111,9 +124,10 @@ class MarketEngine:
         self._event_system.register_callback(self._on_market_event)
         
         # Log market initialization
+        mode = "historical" if use_historical else "simulation"
         if hasattr(self._logger, 'log_market_event'):
             self._logger.log_market_event(
-                event_name="Market Initialized",
+                event_name=f"Market Initialized ({mode} mode)",
                 affected_symbols=self._asset_manager.get_symbols(),
                 impact="initialization",
                 sentiment_score=0.0
