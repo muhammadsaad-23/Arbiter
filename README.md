@@ -1,192 +1,94 @@
 # Stock Market Simulator
 
-A stock market simulation engine with AI trading bots. Built this to learn more about order matching and algorithmic trading.
-
-## Quick Start
-
-```bash
-cd stock-sim
-
-# create venv and install deps
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-
-# run it
-python main.py
-```
+I built this to learn how stock markets work under the hood. It simulates a market with fake stocks, and you can watch trading bots compete against each other.
 
 ## What it does
 
-- Simulates 10 stocks with realistic price movements (GBM model)
-- Full order book with price-time priority matching
-- 3 trading bots that actually trade:
-  - Momentum bot (trend following)
-  - Mean reversion bot 
-  - Arbitrage bot (pairs trading)
-- Terminal dashboard showing live prices
+- Runs a fake stock market with 10 stocks
+- Prices move realistically using math (Geometric Brownian Motion)
+- Three trading bots buy and sell automatically
+- Shows everything in a live dashboard
 
-## Running options
+## The bots
 
-```bash
-python main.py                    # default 5 min simulation
-python main.py --duration 600     # 10 minutes
-python main.py --tick-rate 2      # faster updates
-python main.py --no-bots          # just market, no bots
-python main.py --no-dashboard     # headless mode
+**Momentum bot** - follows trends. If a stock is going up, it buys.
+
+**Mean reversion bot** - does the opposite. If a stock dropped too much, it buys expecting it to bounce back.
+
+**Arbitrage bot** - watches pairs of similar stocks. If one gets cheaper than the other, it trades the gap.
+
+## Getting started
+
 ```
-
-## Historical Data Mode (NEW!)
-
-Test your bots against **real historical stock prices** from Yahoo Finance:
-
-```bash
-# Use real historical data (last month, hourly)
-python main.py --historical
-
-# Customize the data range
-python main.py --historical --period 3mo --interval 1d   # 3 months daily
-python main.py --historical --period 1y --interval 1d    # 1 year daily
-python main.py --historical --period 5d --interval 15m   # 5 days, 15-min bars
-```
-
-### Available Options
-
-| Period | Description |
-|--------|-------------|
-| `1d` | Last day |
-| `5d` | Last 5 days |
-| `1mo` | Last month (default) |
-| `3mo` | Last 3 months |
-| `6mo` | Last 6 months |
-| `1y` | Last year |
-| `2y` | Last 2 years |
-
-| Interval | Description | Max History |
-|----------|-------------|-------------|
-| `1m` | 1 minute | 7 days |
-| `5m` | 5 minutes | 60 days |
-| `15m` | 15 minutes | 60 days |
-| `1h` | 1 hour (default) | 730 days |
-| `1d` | 1 day | unlimited |
-
-### Simulation vs Historical
-
-| Mode | Command | Data Source |
-|------|---------|-------------|
-| **Simulation** | `python main.py` | Generated using GBM (fake prices) |
-| **Historical** | `python main.py --historical` | Real data from Yahoo Finance |
-
-## Web UI (React + TypeScript)
-
-There's a real-time dashboard built with React and TypeScript:
-
-```bash
-# Terminal 1 - start the API server
+cd stock-sim
+python3 -m venv venv
 source venv/bin/activate
-pip install fastapi uvicorn websockets
+pip install -r requirements.txt
+python main.py
+```
+
+## Run options
+
+```
+python main.py                   # runs for 5 minutes
+python main.py --duration 600    # runs for 10 minutes
+python main.py --tick-rate 2     # prices update faster
+python main.py --no-bots         # no bots, just watch prices
+```
+
+## Using real stock data
+
+You can run it with actual historical prices from Yahoo Finance instead of fake data:
+
+```
+python main.py --historical
+python main.py --historical --period 3mo --interval 1d
+python main.py --historical --period 1y --interval 1d
+```
+
+## Web dashboard
+
+There's a nicer looking web version:
+
+```
+# terminal 1
+source venv/bin/activate
 python api/server.py
 
-# Terminal 2 - start the frontend
+# terminal 2
 cd frontend
 npm install
 npm run dev
 ```
 
-Then go to http://localhost:3000
-
-### Streamlit (alternative)
-
-If you prefer something simpler:
-
-```bash
-streamlit run app.py
-```
-
-Then go to http://localhost:8501
-
-## Project Structure
-
-```
-stock-sim/
-├── engine/          # market simulation
-│   ├── market.py    # main engine
-│   ├── asset.py     # price models
-│   └── events.py    # news/events
-├── trading/         # order execution
-│   ├── orderbook.py # matching engine
-│   ├── broker.py    # order routing
-│   └── portfolio.py # position tracking
-├── bots/            # trading strategies
-├── utils/           # logging, indicators
-├── api/             # FastAPI backend
-│   └── server.py    # websocket server
-├── frontend/        # React + TypeScript UI
-│   └── src/
-└── main.py          # CLI entry point
-```
-
-## Price Models
-
-Using Geometric Brownian Motion for price simulation:
-
-```
-dS = μS*dt + σS*dW
-```
-
-Where μ is drift and σ is volatility. Pretty standard stuff.
+Open http://localhost:3000
 
 ## How the order book works
 
-- Price-time priority (best price first, then earliest order)
-- Supports market, limit, stop-loss, take-profit orders
-- Partial fills work
-- Market maker quotes provide liquidity
+When a bot wants to buy, it places an order. The order book matches buyers with sellers. Best price wins, and if prices are equal, whoever ordered first wins.
 
-## Bot strategies
+Supports market orders, limit orders, stop loss, and take profit.
 
-**Momentum**: Buys when ROC > threshold and RSI not overbought. Uses MACD for confirmation. Basic trend following.
-
-**Mean Reversion**: Looks for prices >2 std devs from mean. Buys oversold, exits when price reverts.
-
-**Arbitrage**: Monitors correlated stock pairs. When spread diverges, goes long underperformer.
+## Folder structure
+```
+engine/    - price simulation and market logic
+trading/   - order book and portfolio tracking
+bots/      - the three trading strategies
+api/       - backend server for web dashboard
+frontend/  - react app
+main.py    - run this to start
+```
 
 ## Logs
 
-Audit logs go to `logs/audit.log`. They're hash-chained so you can verify nothing was tampered with:
+Everything gets logged to logs/audit.log. The logs are hash-chained so you can check if anyone messed with them.
 
-```python
-from utils.logger import AuditLogger
-logger = AuditLogger()
-logger.verify_chain_integrity()  # returns True if ok
-```
+## Tech
 
-## Tests
+Python for the simulation. FastAPI and WebSockets for real-time data. React and TypeScript for the dashboard.
 
-```bash
-pytest tests/ -v
-```
+## Still working on
 
-## TODO
-
-- [ ] better arbitrage detection
-- [ ] add more indicators
-- [x] websocket api 
-- [x] historical data mode (Yahoo Finance)
-- [ ] fix the volatility decay (its a bit aggressive)
-- [ ] mobile responsive layout
-
-## Sample output
-
-```
-══════════════════════════════════════════════════════════════════
-                    SIMULATION COMPLETE
-══════════════════════════════════════════════════════════════════
-Duration:              60 seconds
-Total Trades:          24
-Trade Value:           $204,778.71
-
-Most Profitable Bot: Mean Reversion Trader (+$17,026.92)
-Portfolio Peak Value: $100,000.00
-══════════════════════════════════════════════════════════════════
-```
+- Better arbitrage detection
+- More technical indicators
+- Mobile friendly layout
