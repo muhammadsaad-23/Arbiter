@@ -9,8 +9,8 @@ interface PriceChartProps {
 }
 
 const COLORS = [
-  '#6366f1', '#22c55e', '#ef4444', '#eab308', '#06b6d4',
-  '#ec4899', '#f97316', '#8b5cf6', '#14b8a6', '#f43f5e'
+  '#06b6d4', '#22c55e', '#ef4444', '#eab308', '#3b82f6',
+  '#0ea5e9', '#f97316', '#14b8a6', '#38bdf8', '#2dd4bf'
 ]
 
 export default function PriceChart({ priceHistory, assets }: PriceChartProps) {
