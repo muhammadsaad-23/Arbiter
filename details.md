@@ -94,7 +94,7 @@ def update_price_gbm(self, dt: float = 1.0) -> float:
 ```
 
 **Interview Answer:**
-"I used GBM because it's the industry standard for modeling stock prices. The formula dS = μS*dt + σS*dW combines deterministic drift (μ) with random Brownian motion (σ*dW). The key insight is that stock returns are log-normally distributed, which means prices can't go negative - unlike simple random walks."
+I used GBM because it's the industry standard for modeling stock prices. The formula dS = μS*dt + σS*dW combines deterministic drift (μ) with random Brownian motion (σ*dW). The key insight is that stock returns are log-normally distributed, which means prices can't go negative - unlike simple random walks.
 
 ### 2. Order Book with Price-Time Priority
 
@@ -107,7 +107,7 @@ self._ask_prices: List[float] = []  # min-heap
 ```
 
 **Interview Answer:**
-"The order book uses heaps for efficient best bid/ask lookup. Python's heapq gives us O(log n) insertion and O(1) best price. For time priority at the same price level, orders are stored in a list - first in, first matched. This mimics how real exchanges work with FIFO matching."
+The order book uses heaps for efficient best bid/ask lookup. Python's heapq gives us O(log n) insertion and O(1) best price. For time priority at the same price level, orders are stored in a list - first in, first matched. This mimics how real exchanges work with FIFO matching.
 
 ### 3. Trading Strategies
 
@@ -120,7 +120,7 @@ if score >= 3:  # Multi-factor confirmation
 ```
 
 **Interview Answer:**
-"The momentum strategy uses multiple indicator confirmation to reduce false signals. It looks for Rate of Change (ROC) above threshold, RSI between 30-60 (not overbought), bullish MACD crossover, and volume confirmation. The scoring system requires at least 3 factors to align before entering."
+The momentum strategy uses multiple indicator confirmation to reduce false signals. It looks for Rate of Change (ROC) above threshold, RSI between 30-60 (not overbought), bullish MACD crossover, and volume confirmation. The scoring system requires at least 3 factors to align before entering.
 
 #### Mean Reversion Bot
 
@@ -132,7 +132,7 @@ if z_score < -2.0:  # 2 std devs below mean
 ```
 
 **Purpose1:**
-"Mean reversion exploits the statistical tendency of prices to return to their mean. When a stock is 2+ standard deviations from its moving average (Z-score < -2), it's statistically oversold. The strategy buys these dips and exits when price reverts to the mean."
+Mean reversion exploits the statistical tendency of prices to return to their mean. When a stock is 2+ standard deviations from its moving average (Z-score < -2), it's statistically oversold. The strategy buys these dips and exits when price reverts to the mean.
 
 #### Arbitrage Bot
 
@@ -145,7 +145,7 @@ if abs(z_score) > 2:  # Spread diverged
 ```
 
 **Purpose2:**
-"The arbitrage bot monitors correlated stock pairs (same sector usually have 0.7-0.9 correlation). When their spread diverges beyond 2 standard deviations, it goes long the underperformer expecting convergence. It's market-neutral - profits from the spread narrowing, not market direction."
+The arbitrage bot monitors correlated stock pairs (same sector usually have 0.7-0.9 correlation). When their spread diverges beyond 2 standard deviations, it goes long the underperformer expecting convergence. It's market-neutral - profits from the spread narrowing, not market direction.
 
 ### 4. Technical Indicators
 
@@ -166,7 +166,7 @@ percent_b = (price - lower) / (upper - lower)
 ```
 
 **Purpose3:**
-"I implemented streaming indicators with O(1) updates where possible. The EMA uses incremental calculation: EMA_t = Price_t * k + EMA_{t-1} * (1-k) instead of recalculating from scratch. RSI and MACD use the standard formulas but are optimized for real-time updates with deques for rolling windows."
+I implemented streaming indicators with O(1) updates where possible. The EMA uses incremental calculation: EMA_t = Price_t * k + EMA_{t-1} * (1-k) instead of recalculating from scratch. RSI and MACD use the standard formulas but are optimized for real-time updates with deques for rolling windows.
 
 ---
 
@@ -174,27 +174,27 @@ percent_b = (price - lower) / (upper - lower)
 
 ### 1. Why async/await throughout?
 
-"The market simulation needs to handle thousands of concurrent operations: price updates, order processing, bot decisions, event generation. Using asyncio lets me handle this concurrently on a single thread without the complexity of locks. The asyncio.gather() pattern runs price updates, event processing, and bot cycles in parallel."
+The market simulation needs to handle thousands of concurrent operations: price updates, order processing, bot decisions, event generation. Using asyncio lets me handle this concurrently on a single thread without the complexity of locks. The asyncio.gather() pattern runs price updates, event processing, and bot cycles in parallel.
 
 ### 2. Why separate Market, Broker, and Bot layers?
 
-"Clean separation of concerns. The Market only cares about price simulation and events. The Broker handles order validation, routing, and settlement. Bots implement strategies. Each can be tested independently. This also mirrors real-world architecture where exchanges, brokerages, and trading firms are separate entities."
+Clean separation of concerns. The Market only cares about price simulation and events. The Broker handles order validation, routing, and settlement. Bots implement strategies. Each can be tested independently. This also mirrors real-world architecture where exchanges, brokerages, and trading firms are separate entities.
 
 ### 3. Why hash-chained audit logs?
 
-"In financial systems, audit trails must be tamper-evident. Each log entry includes a hash of the previous entry: [HASH:abc123|PREV:xyz789]. If anyone modifies historical logs, the chain breaks. The verify_chain_integrity() method can detect tampering. This is similar to how blockchain ensures data integrity."
+In financial systems, audit trails must be tamper-evident. Each log entry includes a hash of the previous entry: [HASH:abc123|PREV:xyz789]. If anyone modifies historical logs, the chain breaks. The verify_chain_integrity() method can detect tampering. This is similar to how blockchain ensures data integrity.
 
 ### 4. Why WebSocket instead of REST polling?
 
-"Markets move fast. Polling would create latency and unnecessary load. WebSocket maintains a persistent connection and pushes updates immediately. The frontend receives 2 ticks/second with full market state. This gives a responsive real-time experience."
+Markets move fast. Polling would create latency and unnecessary load. WebSocket maintains a persistent connection and pushes updates immediately. The frontend receives 2 ticks/second with full market state. This gives a responsive real-time experience.
 
 ### 5. Why configurable via YAML?
 
-"I wanted to experiment with different parameters without changing code: volatility, bot thresholds, trading rules. YAML is human-readable and supports nested structures. You can run different simulations by just changing config values."
+I wanted to experiment with different parameters without changing code: volatility, bot thresholds, trading rules. YAML is human-readable and supports nested structures. You can run different simulations by just changing config values.
 
 ### 6. Why heap-based order book?
 
-"Real exchanges need O(log n) order insertion and O(1) best price lookup. A sorted list would give O(n) insertion. Two heaps (max-heap for bids, min-heap for asks) provide the right complexity. I use negative prices for the bid heap since Python only has min-heap."
+Real exchanges need O(log n) order insertion and O(1) best price lookup. A sorted list would give O(n) insertion. Two heaps (max-heap for bids, min-heap for asks) provide the right complexity. I use negative prices for the bid heap since Python only has min-heap.
 
 ---
 
