@@ -131,7 +131,7 @@ if z_score < -2.0:  # 2 std devs below mean
     return {'action': 'buy'}
 ```
 
-**Interview Answer:**
+**Purpose1:**
 "Mean reversion exploits the statistical tendency of prices to return to their mean. When a stock is 2+ standard deviations from its moving average (Z-score < -2), it's statistically oversold. The strategy buys these dips and exits when price reverts to the mean."
 
 #### Arbitrage Bot
@@ -144,7 +144,7 @@ if abs(z_score) > 2:  # Spread diverged
     # Long underperformer, short outperformer
 ```
 
-**Interview Answer:**
+**Purpose2:**
 "The arbitrage bot monitors correlated stock pairs (same sector usually have 0.7-0.9 correlation). When their spread diverges beyond 2 standard deviations, it goes long the underperformer expecting convergence. It's market-neutral - profits from the spread narrowing, not market direction."
 
 ### 4. Technical Indicators
@@ -165,7 +165,7 @@ lower = sma - (2 * std)
 percent_b = (price - lower) / (upper - lower)
 ```
 
-**Interview Answer:**
+**Purpose3:**
 "I implemented streaming indicators with O(1) updates where possible. The EMA uses incremental calculation: EMA_t = Price_t * k + EMA_{t-1} * (1-k) instead of recalculating from scratch. RSI and MACD use the standard formulas but are optimized for real-time updates with deques for rolling windows."
 
 ---
@@ -232,41 +232,41 @@ percent_b = (price - lower) / (upper - lower)
 
 ---
 
-## Common Interview Questions & Answers
+## Common Questions & Answers
 
 ### Technical Questions
 
-**Q: How does your order matching algorithm work?**
+**Q: How does my order matching algorithm work?**
 
 "It's price-time priority. Best price always matches first. At the same price, earlier orders get priority. For a market buy, I scan the ask side from lowest price up. For limit orders, I first try to match against the opposite side, then add unfilled quantity to the book."
 
-**Q: How do you handle partial fills?**
+**Q: How do I handle partial fills?**
 
 "Each order tracks filled_quantity and remaining_quantity. When matching, I fill the minimum of what's available and what's needed. The order status changes to PARTIALLY_FILLED if some quantity remains."
 
-**Q: Why did you choose these specific trading strategies?**
+**Q: Why did I choose these specific trading strategies?**
 
 "They represent three fundamental approaches: (1) Momentum - trend following, buy strength; (2) Mean reversion - contrarian, buy weakness; (3) Arbitrage - market-neutral, exploit mispricings. Together they demonstrate different edge sources in markets."
 
-**Q: How would you scale this system?**
+**Q: How would I scale this system?**
 
 "For horizontal scaling: separate the order book into a dedicated matching engine service. Use Redis/Kafka for pub/sub of price updates. Each bot could run as a separate process. The current design already separates concerns cleanly, making microservice extraction straightforward."
 
-**Q: What would you add in a production system?**
+**Q: What would I add in a production system?**
 
 "(1) Persistence - database for orders and positions; (2) Authentication - user accounts and API keys; (3) Risk management - position limits, buying power checks; (4) Monitoring - Prometheus metrics, Grafana dashboards; (5) More order types - iceberg, trailing stop."
 
-### Behavioral Questions
+### General Questions
 
-**Q: What was the hardest bug you encountered?**
+**Q: What was the hardest bug I encountered?**
 
 "The race condition between bots placing orders. Two bots would see the same opportunity and both try to buy, exceeding available cash. I solved it with async locks and balance checks at order submission time."
 
-**Q: What would you do differently?**
+**Q: What would I do differently?**
 
 "I'd add persistence earlier. Currently everything is in-memory, so a restart loses state. Also, I'd use a proper message queue for event distribution instead of callbacks."
 
-**Q: How did you test this?**
+**Q: How did I test this?**
 
 "Unit tests for the order book cover matching, partial fills, cancellation, and price-time priority. I also ran stress tests with 10,000+ concurrent events to verify performance. The bots were tested by running simulations and analyzing P&L."
 
