@@ -93,7 +93,7 @@ def update_price_gbm(self, dt: float = 1.0) -> float:
     new_price = self.price * math.exp(log_return)
 ```
 
-**Interview Answer:**
+**Answer:**
 I used GBM because it's the industry standard for modeling stock prices. The formula dS = μS*dt + σS*dW combines deterministic drift (μ) with random Brownian motion (σ*dW). The key insight is that stock returns are log-normally distributed, which means prices can't go negative - unlike simple random walks.
 
 ### 2. Order Book with Price-Time Priority
@@ -106,7 +106,7 @@ self._ask_prices: List[float] = []  # min-heap
 # Matching: best price first, then earliest order at that price
 ```
 
-**Interview Answer:**
+**Answer:**
 The order book uses heaps for efficient best bid/ask lookup. Python's heapq gives us O(log n) insertion and O(1) best price. For time priority at the same price level, orders are stored in a list - first in, first matched. This mimics how real exchanges work with FIFO matching.
 
 ### 3. Trading Strategies
@@ -119,7 +119,7 @@ if score >= 3:  # Multi-factor confirmation
     return {'action': 'buy', 'confidence': score/5}
 ```
 
-**Interview Answer:**
+**Answer:**
 The momentum strategy uses multiple indicator confirmation to reduce false signals. It looks for Rate of Change (ROC) above threshold, RSI between 30-60 (not overbought), bullish MACD crossover, and volume confirmation. The scoring system requires at least 3 factors to align before entering.
 
 #### Mean Reversion Bot
