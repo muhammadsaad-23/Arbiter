@@ -1,4 +1,4 @@
-# Arbiter - Stock Market Simulator: Interview Preparation
+# Arbiter - Stock Market Simulator
 
 ## Project Overview
 
