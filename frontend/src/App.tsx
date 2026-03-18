@@ -24,7 +24,16 @@ function App() {
   }, [])
 
   const connectWs = () => {
-    const ws = new WebSocket(`ws://${window.location.hostname}:8000/ws`)
+    // Allow overriding the websocket endpoint for deployments (e.g. Railway backend)
+    // Set VITE_WS_URL="wss://<your-railway-service>.up.railway.app" (without /ws)
+    const wsUrlFromEnv = import.meta.env.VITE_WS_URL as string | undefined
+    const wsUrl = wsUrlFromEnv
+      ? wsUrlFromEnv.replace(/\/$/, "").endsWith("/ws")
+        ? wsUrlFromEnv.replace(/\/$/, "")
+        : `${wsUrlFromEnv.replace(/\/$/, "")}/ws`
+      : `ws://${window.location.hostname}:8000/ws`
+
+    const ws = new WebSocket(wsUrl)
     
     ws.onopen = () => {
       console.log('connected to sim')

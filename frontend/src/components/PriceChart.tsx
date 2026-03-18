@@ -13,7 +13,7 @@ const COLORS = [
   '#0ea5e9', '#f97316', '#14b8a6', '#38bdf8', '#2dd4bf'
 ]
 
-export default function PriceChart({ priceHistory, assets }: PriceChartProps) {
+export default function PriceChart({ priceHistory, assets: _assets }: PriceChartProps) {
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null)
 
   const symbols = Object.keys(priceHistory)
